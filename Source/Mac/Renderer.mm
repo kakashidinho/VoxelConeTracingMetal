@@ -55,26 +55,27 @@
 	MTLRenderPassDescriptor* renderPassDescriptor = view.currentRenderPassDescriptor;
 
 	if(renderPassDescriptor != nil) {
+		uint32_t w = (uint32_t)view.currentDrawable.texture.width;
+		uint32_t h = (uint32_t)view.currentDrawable.texture.height;
 		if (!initedScene)
 		{
 			/// Init Rendering Application Logic
-			Application::getInstance().init(_device,
-											(uint32_t)view.currentDrawable.texture.width,
-											(uint32_t)view.currentDrawable.texture.height);
+			Application::getInstance().init(_device, w, h);
 
 			initedScene = YES;
 		}
 		Application::getInstance().iterate(commandBuffer,
 										   renderPassDescriptor,
-										   (uint32_t)view.currentDrawable.texture.width,
-										   (uint32_t)view.currentDrawable.texture.height);
+										   w,
+										   h);
 
 		[commandBuffer presentDrawable:view.currentDrawable];
+
+		((GameView*)view).fpsCounter.stringValue =
+			[NSString stringWithFormat:@"%ux%u FPS: %d", w, h, (int)Time::framesPerSecond];
 	}
 
 	[commandBuffer commit];
-
-	((GameView*)view).fpsCounter.stringValue = [NSString stringWithFormat:@"FPS: %d", (int)Time::framesPerSecond];
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size

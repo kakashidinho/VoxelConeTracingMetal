@@ -8,9 +8,7 @@ Since original Voxel Cone Tracing makes use of Geometry Shader (typically availa
 and Metal doesn't support Geometry Shader, this project experiments some alternative ways to implement
 this technique with Metal.
 
-<p align="center">
-<img src="https://github.com/kakashidinho/VoxelConeTracingMetal/blob/master/Assets/Screenshots/metal-mac.png">
-</p>
+![](Assets/Screenshots/metal-mac.png)
 
 What changed compare to Friduric's original OpenGL implementation
 --------------

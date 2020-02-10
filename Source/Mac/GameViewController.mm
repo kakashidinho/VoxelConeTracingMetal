@@ -27,8 +27,8 @@
 	[super viewDidLoad];
 
 	_view = (GameView *)self.view;
-
 	_view.controller = self;
+	_view.drawableSize = _view.bounds.size;
 
 #if 0
 	// Try to use integrated GPU
@@ -58,6 +58,11 @@
 	[_renderer mtkView:_view drawableSizeWillChange:_view.bounds.size];
 
 	_view.delegate = _renderer;
+}
+
+- (void)viewWillAppear
+{
+	[super viewWillAppear];
 }
 
 - (void)viewDidAppear
