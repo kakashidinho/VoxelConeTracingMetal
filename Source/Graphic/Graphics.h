@@ -137,6 +137,7 @@ private:
 	Material * voxelizationMaterial;
 	Texture3D * voxelTexture = nullptr;
 	void initVoxelization();
+	id<MTLRenderCommandEncoder> setupVoxelWritingPass(id<MTLCommandBuffer> commandBuffer);
 	void voxelize(id<MTLCommandBuffer> commandBuffer, Scene & renderingScene, bool clearVoxelizationFirst = true);
 
 	// ----------------

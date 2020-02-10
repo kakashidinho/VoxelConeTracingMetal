@@ -207,6 +207,28 @@ void Graphics::initVoxelization()
 								   VOXEL_RENDER_TARGET_SAMPLES);
 }
 
+id<MTLRenderCommandEncoder> Graphics::setupVoxelWritingPass(id<MTLCommandBuffer> commandBuffer)
+{
+	// Activate the dummy framebuffer. We won't store color in it. Just
+	// use it to make use of rasterizer stage.
+	auto renderEncoder = dummyVoxelizationFbo->beginRenderPass(commandBuffer,
+															   MTLLoadActionDontCare,
+															   false, false, 1);
+
+	Material * material = voxelizationMaterial;
+	material->activate(renderEncoder);
+
+	// Settings.
+	uploadGlobalConstants(renderEncoder);
+	[renderEncoder setCullMode:MTLCullModeNone];
+	[renderEncoder setDepthStencilState:depthDisabledState];
+
+	// Output 3D Texture.
+	voxelTexture->activate(renderEncoder, 2);
+
+	return renderEncoder;
+}
+
 void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 						Scene & renderingScene, bool clearVoxelization)
 {
@@ -225,49 +247,43 @@ void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 
 	[computeEncoder endEncoding];
 
-	// Activate the dummy framebuffer. We won't store color in it. Just
-	// use it to make use of rasterizer stage.
-	auto renderEncoder = dummyVoxelizationFbo->beginRenderPass(commandBuffer,
-															   MTLLoadActionDontCare,
-															   false, false, 1);
-
-	Material * material = voxelizationMaterial;
-	material->activate(renderEncoder);
-
-	// Settings.
-	uploadGlobalConstants(renderEncoder);
-	[renderEncoder setCullMode:MTLCullModeNone];
-	[renderEncoder setDepthStencilState:depthDisabledState];
-
-	// Output 3D Texture.
-	voxelTexture->activate(renderEncoder, 2);
-
 	// ----- Render.
 	if (VOXEL_SINGLE_PASS)
 	{
 		// We will render to 3 portions of dummy render target. Each portion represents
 		// one projection axis. The primitives will only be sent to the portion representing its dominant axis
+		auto renderEncoder = setupVoxelWritingPass(commandBuffer);
+
 		MTLViewport viewports[] = {
 			viewport(0, 0, voxelTextureSize, voxelTextureSize),
 			viewport(voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
 			viewport(2 * voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
 		};
 		[renderEncoder setViewports:viewports count:3];
+
 		renderQueue(renderEncoder, renderingScene.renderers);
+
+		[renderEncoder endEncoding];
 	}
 	else
 	{
 		// Multipass:
 		// We render in 3 passes. Each pass project the object onto a basic X/Y/Z plane
-		[renderEncoder setViewport:viewport(voxelTextureSize, voxelTextureSize)];
 		for (uint32_t i = 0; i < 3; ++i)
 		{
+			auto renderEncoder = setupVoxelWritingPass(commandBuffer);
+#ifdef DEBUG
+			renderEncoder.label = [NSString stringWithFormat:@"Voxel writing pass %u", i];
+#endif
+			[renderEncoder setViewport:viewport(voxelTextureSize, voxelTextureSize)];
 			[renderEncoder setVertexBytes:&i length:sizeof(i) atIndex:VOXEL_PROJ_BINDING];
+
 			renderQueue(renderEncoder, renderingScene.renderers);
+
+			// End the render pass to make sure the voxel writing is visible to next projection pass
+			[renderEncoder endEncoding];
 		}
 	}
-
-	[renderEncoder endEncoding];
 
 	// Mipmap generation
 	if (automaticallyRegenerateMipmap || regenerateMipmapQueued) {
