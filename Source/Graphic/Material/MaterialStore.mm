@@ -13,8 +13,8 @@ MaterialStore::MaterialStore()
 				   MTLPixelFormatRGBA8Unorm,
 				   MTLPixelFormatInvalid,
 				   MTLPixelFormatInvalid,
-				   8,
-				   8, // enable MSAA for conservative rasterization
+				   Graphics::VOXEL_RENDER_TARGET_SAMPLES,
+				   Graphics::VOXEL_RENDER_TARGET_SAMPLES, // enable MSAA for conservative rasterization
 				   false,
 				   true
 				   );

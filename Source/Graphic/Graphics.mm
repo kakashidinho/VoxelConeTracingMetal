@@ -26,16 +26,21 @@
 namespace
 {
 
-MTLViewport viewport(uint32_t viewportWidth, uint32_t viewportHeight)
+MTLViewport viewport(uint32_t x, uint32_t y, uint32_t viewportWidth, uint32_t viewportHeight)
 {
 	MTLViewport viewport;
 	viewport.width = viewportWidth;
 	viewport.height = viewportHeight;
-	viewport.originX = viewport.originY = 0;
+	viewport.originX = x;
+	viewport.originY = y;
 	viewport.znear = 0;
 	viewport.zfar = 1;
 
 	return viewport;
+}
+MTLViewport viewport(uint32_t viewportWidth, uint32_t viewportHeight)
+{
+	return viewport(0, 0, viewportWidth, viewportHeight);
 }
 }
 
@@ -193,11 +198,13 @@ void Graphics::initVoxelization()
 	voxelTexture = new Texture3D(voxelTextureSize, voxelTextureSize, voxelTextureSize);
 
 	// Dummy render target
-	dummyVoxelizationFbo = new FBO(voxelTextureSize, voxelTextureSize,
+	// In single pass mode: we use 3 portions of texture to represent 3 planes X & Y & Z
+	// to project the triangle to
+	dummyVoxelizationFbo = new FBO(VOXEL_SINGLE_PASS ? (3 * voxelTextureSize) : voxelTextureSize,
+								   voxelTextureSize,
 								   MTLPixelFormatRGBA8Unorm,
 								   MTLPixelFormatInvalid,
-								   8,
-								   VOXEL_SINGLE_PASS ? 3 : 1);
+								   VOXEL_RENDER_TARGET_SAMPLES);
 }
 
 void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
@@ -218,6 +225,8 @@ void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 
 	[computeEncoder endEncoding];
 
+	// Activate the dummy framebuffer. We won't store color in it. Just
+	// use it to make use of rasterizer stage.
 	auto renderEncoder = dummyVoxelizationFbo->beginRenderPass(commandBuffer,
 															   MTLLoadActionDontCare,
 															   false, false, 1);
@@ -227,24 +236,30 @@ void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 
 	// Settings.
 	uploadGlobalConstants(renderEncoder);
-	[renderEncoder setViewport:viewport(voxelTextureSize, voxelTextureSize)];
 	[renderEncoder setCullMode:MTLCullModeNone];
 	[renderEncoder setDepthStencilState:depthDisabledState];
 
-	// Texture.
+	// Output 3D Texture.
 	voxelTexture->activate(renderEncoder, 2);
 
 	// ----- Render.
 	if (VOXEL_SINGLE_PASS)
 	{
-		// We will render to 3 slices of dummy render target. Each slice represents
-		// one projection axis. The primitives will only be sent to the slice of its dominant axis
+		// We will render to 3 portions of dummy render target. Each portion represents
+		// one projection axis. The primitives will only be sent to the portion representing its dominant axis
+		MTLViewport viewports[] = {
+			viewport(0, 0, voxelTextureSize, voxelTextureSize),
+			viewport(voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
+			viewport(2 * voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
+		};
+		[renderEncoder setViewports:viewports count:3];
 		renderQueue(renderEncoder, renderingScene.renderers);
 	}
 	else
 	{
 		// Multipass:
 		// We render in 3 passes. Each pass project the object onto a basic X/Y/Z plane
+		[renderEncoder setViewport:viewport(voxelTextureSize, voxelTextureSize)];
 		for (uint32_t i = 0; i < 3; ++i)
 		{
 			[renderEncoder setVertexBytes:&i length:sizeof(i) atIndex:VOXEL_PROJ_BINDING];

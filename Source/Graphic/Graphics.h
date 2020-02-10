@@ -49,6 +49,7 @@ public:
 	// Single pass voxelization projection might not work correctly with
 	// raster order group. Disable by default.
 	static constexpr bool VOXEL_SINGLE_PASS = false;
+	static constexpr int VOXEL_RENDER_TARGET_SAMPLES = 8;
 
 	Graphics() : computePipelineCache(*this) {}
 

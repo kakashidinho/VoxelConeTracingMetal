@@ -18,7 +18,7 @@ struct VS_out
     float3 worldPosition [[user(locn0)]];
     float3 normal [[user(locn1)]];
     float4 gl_Position [[position]];
-    uint layer [[render_target_array_index, function_constant(kVoxelizationSinglePass)]];
+    uint layer [[viewport_array_index, function_constant(kVoxelizationSinglePass)]];
 };
 
 struct VS_in
