@@ -73,7 +73,7 @@ public:
 	Settings &settings() { return globalConstants; }
 
 	// ----------------
-	// Voxelization.
+	// Voxelization parameters.
 	// ----------------
 	bool automaticallyRegenerateMipmap = true;
 	bool regenerateMipmapQueued = true;
