@@ -66,13 +66,11 @@
 	self.view.window.acceptsMouseMovedEvents = YES;
 	_lastMousePointValid = NO;
 
-	CGAssociateMouseAndMouseCursorPosition(false);
 	CGWarpMouseCursorPosition(self.view.window.frame.origin);
 }
 
 - (void)viewDidDisappear
 {
-	CGAssociateMouseAndMouseCursorPosition(true);
 }
 
 - (void)mouseMoved:(NSEvent *)nsEvent
