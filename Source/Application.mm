@@ -60,7 +60,8 @@ void Application::iterate(id<MTLCommandBuffer> commandBuffer,
 	// --------------------------------------------------
 	// Update world.
 	// --------------------------------------------------
-	scene->update(mouseDelta[0], mouseDelta[1], transientCameraMoveKeyPressed);
+	if (!pause)
+		scene->update(mouseDelta[0], mouseDelta[1], transientCameraMoveKeyPressed);
 
 	// --------------------------------------------------
 	// Rendering.
@@ -166,6 +167,13 @@ void Application::onKeyUp(char key)
 		case 'C': case 'c':
 			graphics.settings().shadows = !graphics.settings().shadows;
 			std::cout << "Application indirect shadow: " << graphics.settings().shadows << std::endl;
+			break;
+		case 'T': case 't':
+			pause = !pause;
+			if (!pause)
+			{
+				Time::time = Time::currentTime();
+			}
 			break;
 	}
 }

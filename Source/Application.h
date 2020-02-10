@@ -52,4 +52,7 @@ private:
 	// These variables are to store transient key press event which happen before application has a chance
 	// to process them
 	bool transientCameraMoveKeyPressed[4] = {false, false, false, false};
+
+	// Pause updating?
+	bool pause = false;
 };
