@@ -16,7 +16,10 @@ public:
 		renderingCamera->position = glm::vec3(0, 0, 1.8f);
 		firstPersonController = new FirstPersonController(renderingCamera);
 	}
-	virtual void update() override { firstPersonController->update(); }
+	virtual void update(float mouseXDelta, float mouseYDelta, bool buttonsPressed[]) override
+	{
+		firstPersonController->update(mouseXDelta, mouseYDelta, buttonsPressed);
+	}
 	~FirstPersonScene() { delete firstPersonController; }
 private:
 	FirstPersonController * firstPersonController;

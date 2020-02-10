@@ -2,9 +2,11 @@
 
 #include <vector>
 
+#include <Metal/Metal.h>
+
 #include "VertexData.h"
 
-/// <summary> Represents a basic mesh with OpenGL related attributes (vertex data, indices), 
+/// <summary> Represents a basic mesh with OpenGL related attributes (vertex data, indices),
 /// and variables (VAO, VAO, and EBO identifiers). </summary>
 class Mesh {
 public:
@@ -17,9 +19,7 @@ public:
 	std::vector<VertexData> vertexData;
 	std::vector<unsigned int> indices;
 
-	// Used for (shared) rendering.
-	int program;
-	unsigned int vbo, vao, ebo; // Vertex Buffer Object, Vertex Array Object, Element Buffer Object.
+	id<MTLBuffer> vbo, ebo; // Vertex Buffer Object, Element Buffer Object.
 	bool meshUploaded = false;
 private:
 	static unsigned int idCounter;

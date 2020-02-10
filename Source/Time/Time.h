@@ -2,6 +2,8 @@
 class Time {
 public:
 	static bool initialized;
-	static unsigned long long frameCount, smoothedDeltaTimeFrameCount;
-	static double deltaTime, time, framesPerSecond, smoothedDeltaTime;
+	static unsigned long long frameCount;
+	static double deltaTime, time, lastFpsCouterTime, framesPerSecond;
+
+	static double currentTime();
 };

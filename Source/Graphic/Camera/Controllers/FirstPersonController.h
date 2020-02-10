@@ -2,14 +2,11 @@
 
 #include <iostream> // TODO: Remove.
 
-#define GLEW_STATIC
-#include <glew.h>
-#include <glfw3.h>
 #include <gtx/rotate_vector.hpp>
 
 #include "../../Camera/Camera.h"
 #include "../../../Time/Time.h"
-#include "../../Camera\PerspectiveCamera.h"
+#include "../../Camera/PerspectiveCamera.h"
 #include "../../../Application.h"
 
 /// <summary> A first person controller that can be attached to a camera. </summary>
@@ -20,45 +17,35 @@ public:
 	const float CAMERA_POSITION_INTERPOLATION_SPEED = 8.0f;
 	const float CAMERA_ROTATION_INTERPOLATION_SPEED = 8.0f;
 
-	Camera * renderingCamera;
-	Camera * targetCamera; // Dummy camera used for interpolation.
+	enum MoveButton
+	{
+		LEFT,
+		RIGHT,
+		FORWARD,
+		BACKWARD,
+	};
 
-	FirstPersonController(Camera * camera) {
-		targetCamera = new PerspectiveCamera();
-		renderingCamera = camera;
+	Camera * const renderingCamera;
+	Camera * const targetCamera; // Dummy camera used for interpolation.
 
+	FirstPersonController(Camera * camera)
+		: targetCamera(new PerspectiveCamera()),
+		  renderingCamera(camera)
+	{
 	}
 
-	FirstPersonController() { delete targetCamera; }
+	~FirstPersonController() { delete targetCamera; }
 
-	void update() {
-		auto & app = Application::getInstance();
-		if (app.currentInputState == Application::InputState::TWEAK_BAR) return;
-
+	void update(float xDelta, float yDelta, bool buttonsPressed[]) {
 		if (firstUpdate) {
 			targetCamera->rotation = renderingCamera->rotation;
 			targetCamera->position = renderingCamera->position;
 			firstUpdate = false;
 		}
 
-		int xwidth, yheight;
-		double xpos, ypos;
-		double xmid, ymid;
-
-		GLFWwindow * window = Application::getInstance().currentWindow;
-
-		glfwGetWindowSize(window, &xwidth, &yheight);
-		glfwGetCursorPos(window, &xpos, &ypos);
-
-		xmid = xwidth / 2.0;
-		ymid = yheight / 2.0;
-
 		// ----------
 		// Rotation.
 		// ----------
-		float xDelta = float(xmid - xpos);
-		float yDelta = float(ymid - ypos);
-
 		float xRot = static_cast<float>(CAMERA_ROTATION_SPEED * xDelta);
 		float yRot = static_cast<float>(CAMERA_ROTATION_SPEED * yDelta);
 
@@ -77,19 +64,19 @@ public:
 		// Position.
 		// ----------
 		// Move forward.
-		if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		if (buttonsPressed[FORWARD]) {
 			targetCamera->position += targetCamera->forward() * (float)Time::deltaTime * CAMERA_SPEED;
 		}
 		// Move backward.
-		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		if (buttonsPressed[BACKWARD]) {
 			targetCamera->position -= targetCamera->forward() * (float)Time::deltaTime * CAMERA_SPEED;
 		}
 		// Strafe right.
-		if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		if (buttonsPressed[RIGHT]) {
 			targetCamera->position += targetCamera->right() * (float)Time::deltaTime * CAMERA_SPEED;
 		}
 		// Strafe left.
-		if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		if (buttonsPressed[LEFT]) {
 			targetCamera->position -= targetCamera->right() * (float)Time::deltaTime * CAMERA_SPEED;
 		}
 
@@ -97,9 +84,6 @@ public:
 		auto * camera = renderingCamera;
 		camera->rotation = mix(camera->rotation, targetCamera->rotation, glm::clamp(Time::deltaTime * CAMERA_ROTATION_INTERPOLATION_SPEED, 0.0, 1.0));
 		camera->position = mix(camera->position, targetCamera->position, glm::clamp(Time::deltaTime * CAMERA_POSITION_INTERPOLATION_SPEED, 0.0, 1.0));
-
-		// Reset mouse position for next update iteration.
-		glfwSetCursorPos(window, xwidth / 2, yheight / 2);
 
 		// Update view (camera) matrix.
 		camera->updateViewMatrix();

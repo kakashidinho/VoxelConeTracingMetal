@@ -19,11 +19,12 @@ public:
 	std::vector<PointLight> pointLights;
 
 	/// <summary> Updates the scene. Is called pre-render. </summary>
-	virtual void update() = 0;
+	virtual void update(float mouseXDelta, float mouseYDelta, bool buttonsPressed[]) = 0;
 
 	/// <summary> Initializes the scene. Is called after construction, but before update and render. </summary>
 	virtual void init(unsigned int viewportWidth, unsigned int viewportHeight) = 0;
 
 	/// <summary> Creates a new scene. Does not initialize it. </summary>
 	Scene() {}
+	virtual ~Scene() {}
 };

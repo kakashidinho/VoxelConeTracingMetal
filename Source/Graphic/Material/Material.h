@@ -1,31 +1,37 @@
-#pragma once;
+#pragma once
 
 #include <string>
 #include <vector>
 #include <memory>
 #include <unordered_map>
 
-#define GLEW_STATIC
-#include <glew.h>
-#include <glfw3.h>
-#include <glm\glm.hpp>
+#include <Metal/Metal.h>
 
-class Shader;
-
-/// <summary> Represents a material that references a gl program, textures and settings. </summary>
+/// <summary> Represents a material that references shaders, blending settings, etc. </summary>
 class Material {
 public:
 	~Material();
-	Material(std::string _name,
-		Shader * vertexShader,
-		Shader * fragmentShader,
-		Shader * geometryShader = nullptr,
-		Shader * tessEvaluationShader = nullptr,
-		Shader * tessControlShader = nullptr);
+	Material(const std::string & _name,
+			 const std::string & shaderFile,
+			 MTLPixelFormat colorFormat,
+			 MTLPixelFormat depthFormat,
+			 MTLPixelFormat stencilFormat,
+			 uint32_t samples = 1,
+			 uint32_t rasterSamples = 1,
+			 bool blending = true,
+			 bool enableColorWrite = false
+			 );
+	/// <summary> Apply this material to the render command
+	void activate(id<MTLRenderCommandEncoder> encoder);
 
-	/// <summary> The actual OpenGL / GLSL program identifier. </summary>
-	GLuint program;
+	MTLRenderPipelineDescriptor *getRenderPipelineDesc() const { return renderPipelineDesc; }
 
 	/// <summary> A name. Just an identifier. Doesn't do anything practical. </summary>
-	std::string name;
+	const std::string name;
+
+private:
+	/// <summary> The Metal render pipeline state. </summary>
+	id<MTLRenderPipelineState> renderPipelineState;
+
+	MTLRenderPipelineDescriptor *renderPipelineDesc;
 };

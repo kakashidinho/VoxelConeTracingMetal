@@ -10,7 +10,7 @@ class Shape;
 /// <summary> A scene with a specular dragon and a ceiling lamp. </summary>
 class DragonScene : public FirstPersonScene {
 public:
-	void update() override;
+	void update(float mouseXDelta, float mouseYDelta, bool buttonsPressed[]) override;
 	void init(unsigned int viewportWidth, unsigned int viewportHeight) override;
 	~DragonScene();
 private:

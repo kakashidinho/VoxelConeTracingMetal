@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../Source/Shape/Transform.h"
+#include "../../Shape/Transform.h"
 #include "../Material/MaterialSetting.h"
 
-#define GLEW_STATIC
-#include <glew.h>
-#include <glfw3.h>
+#include <string>
+#include <Metal/Metal.h>
+
 #include <gtc/type_ptr.hpp>
 #include <glm.hpp>
 
@@ -27,7 +27,7 @@ public:
 
 	// Rendering.
 	MaterialSetting * materialSetting = nullptr;
-	void render(const GLuint program);
+	void render(id<MTLRenderCommandEncoder> encoder);
 private:
 	void setupMeshRenderer();
 	void reuploadIndexDataToGPU();

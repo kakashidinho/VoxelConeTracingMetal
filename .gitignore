@@ -249,3 +249,9 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# Compiled shaders
+*.metallib
+
+# Xcode
+DerivedData

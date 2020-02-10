@@ -3,7 +3,7 @@
 #include <vector>
 
 #include <glm.hpp>
-#include <gtc\matrix_transform.hpp>
+#include <gtc/matrix_transform.hpp>
 #include <gtx/transform.hpp>
 #include <mat4x4.hpp>
 #include <gtc/quaternion.hpp>
@@ -23,7 +23,8 @@ public:
 	void updateTransformMatrix();
 
 	/// <summary> Returns a reference to the transform matrix </summary>
-	glm::mat4 & getTransformMatrix();
+	const glm::mat4 & getTransformMatrix();
+	const glm::mat4 & getInverseTransposeTransformMatrix();
 
 	/// <summary> Output. </summary>
 	friend std::ostream & operator<<(std::ostream &, const Transform &);
@@ -34,4 +35,5 @@ public:
 	glm::vec3 right();
 private:
 	glm::mat4 transform;
+	glm::mat4 transformInvTrans;
 };

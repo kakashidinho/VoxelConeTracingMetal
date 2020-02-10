@@ -2,29 +2,34 @@
 
 #include <vector>
 
-#define GLEW_STATIC
-#include <glew.h>
-#include <glfw3.h>
-#include <SOIL\SOIL.h>
+#include <Metal/Metal.h>
 
-/// <summary> A 3D texture wrapper class. Handles important OpenGL calls. </summary>
+/// <summary> A 3D texture wrapper class. This texture is used for shader writing, not for rendering.</summary>
 class Texture3D {
 public:
-	unsigned char * textureBuffer = nullptr;
-	GLuint textureID;
 
 	/// <summary> Activates this texture and passes it on to a texture unit on the GPU. </summary>
-	void Activate(const int shaderProgram, const std::string glSamplerName, const int textureUnit = GL_TEXTURE0);
+	void activate(id<MTLRenderCommandEncoder> encoder, uint32_t textureUnit = 0);
 
 	/// <summary> Clears this texture using a given clear color. </summary>
-	void Clear(GLfloat clearColor[4]);
+	void clear(id<MTLComputeCommandEncoder> computeEncoder, float clearColor[4]);
 
-	Texture3D(
-		const std::vector<GLfloat> & textureBuffer,
-		const int width, const int height, const int depth,
-		const bool generateMipmaps = true
-	);
+	/// <summary> Generate mipmaps
+	void generateMips(id<MTLBlitCommandEncoder> encoder);
+	void generateMips(id<MTLComputeCommandEncoder> encoder);
+
+	Texture3D(const uint32_t width, const uint32_t height, const uint32_t depth);
 private:
-	int width, height, depth;
-	std::vector<GLfloat> clearData;
+	void initTexture();
+	void initComputeShader();
+	void dispatchCompute(id<MTLComputeCommandEncoder> computeEncoder,
+						 NSUInteger warpSize,
+						 const MTLSize &dimensions);
+
+	uint32_t width, height, depth;
+
+	id<MTLTexture> textureObject;
+	std::vector<id<MTLTexture>> textureObjectViews;
+
+	id<MTLComputePipelineState> clearPipelineState;
 };

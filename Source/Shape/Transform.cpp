@@ -8,12 +8,19 @@ Transform::Transform() {
 
 void Transform::updateTransformMatrix() {
 	transform = glm::translate(position) * glm::mat4_cast(glm::quat(rotation)) * glm::scale(scale);
+	transformInvTrans = glm::transpose(glm::inverse(transform));
 	transformIsInvalid = false;
 }
 
-glm::mat4 & Transform::getTransformMatrix() {
+const glm::mat4 & Transform::getTransformMatrix() {
 	if (transformIsInvalid) { updateTransformMatrix(); }
 	return transform;
+}
+
+const glm::mat4 & Transform::getInverseTransposeTransformMatrix()
+{
+	if (transformIsInvalid) { updateTransformMatrix(); }
+	return transformInvTrans;
 }
 
 glm::vec3 Transform::forward() { return glm::quat(rotation) * glm::vec3(0, 0, 1); }

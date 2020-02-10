@@ -1,20 +1,38 @@
 #pragma once
 
-#define GLEW_STATIC
-#include <glew.h>
-
 #include <vector>
+#include <Metal/Metal.h>
 
-// https://www.opengl.org/wiki/Framebuffer_Object_Examples
-/// <summary> An FBO. Manages important OpenGL calls. </summary>
+/// <summary> An FBO represents a render pass </summary>
 class FBO {
 public:
-	GLuint width, height, frameBuffer, textureColorBuffer, attachment, rbo;
-	void ActivateAsTexture(const int shaderProgram, const std::string glSamplerName, const int textureUnit = GL_TEXTURE0);
-	FBO(
-		GLuint w, GLuint h, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST,
-		GLint internalFormat = GL_RGB16F, GLint format = GL_FLOAT, GLint wrap = GL_REPEAT);
+	FBO(uint32_t width, uint32_t height,
+		MTLPixelFormat colorFormat,
+		MTLPixelFormat depthFormat = MTLPixelFormatInvalid,
+		bool cube = false,
+		uint32_t samples = 1);
 	~FBO();
+	void activateAsTexture(id<MTLRenderCommandEncoder> encoder, uint32_t textureUnit = 0);
+	id<MTLRenderCommandEncoder> beginRenderPass(id<MTLCommandBuffer> commandBuffer,
+												MTLLoadAction load = MTLLoadActionClear,
+												bool keepColor = true,
+												bool keepDepth = false,
+												uint32_t layersToRender = 1 // Number of cube's layers to be rendered in this pass
+	);
+
+	const uint32_t width, height;
 private:
-	GLuint generateAttachment(GLuint w, GLuint h, GLboolean depth, GLboolean stencil, GLenum magFilter, GLenum minFilter, GLenum wrap);
+	void initTextures(MTLPixelFormat colorFormat,
+					  MTLPixelFormat depthFormat,
+					  bool cube,
+					  uint32_t samples);
+	void initRenderPass();
+
+	id<MTLTexture> textureColorObject = nil;
+	id<MTLTexture> textureDepthObject = nil;
+
+	id<MTLTexture> resolveTextureColorObject = nil;
+	id<MTLTexture> resolveTextureDepthObject = nil;
+
+	MTLRenderPassDescriptor *renderPassDesc = nil;
 };

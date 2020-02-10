@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <Metal/Metal.h>
+
 class Material;
 
 /// <summary> Manages all loaded materials and shader programs. </summary>
@@ -9,11 +11,17 @@ class MaterialStore {
 public:
 	static MaterialStore& getInstance();
 	std::vector<Material*> materials;
-	Material * MaterialStore::findMaterialWithName(std::string name);
-	Material * MaterialStore::findMaterialWithProgramID(unsigned int programID);
-	void AddNewMaterial(
-		std::string name, const char * vertexPath = nullptr, const char * fragmentPath = nullptr,
-		const char * geometryPath = nullptr, const char * tessEvalPath = nullptr, const char * tessCtrlPath = nullptr);
+	Material * findMaterialWithName(std::string name);
+	void AddNewMaterial(const std::string &name,
+						const std::string &shaderFile,
+						MTLPixelFormat colorFormat,
+						MTLPixelFormat depthFormat,
+						MTLPixelFormat stencilFormat,
+						uint32_t samples = 1,
+						uint32_t rasterSamples = 1,
+						bool blending = true,
+						bool enableColorWrite = false
+						);
 	~MaterialStore();
 private:
 	MaterialStore();
