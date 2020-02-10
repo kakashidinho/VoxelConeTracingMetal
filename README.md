@@ -9,7 +9,7 @@ and Metal doesn't support Geometry Shader, this project experiments some alterna
 this technique in Metal.
 
 <p align="center">
-<img src="https://github.com/Friduric/voxel-cone-tracing/blob/master/Assets/Screenshots/vct2s.png">
+<img src="https://github.com/kakashidinho/VoxelConeTracingMetal/blob/master/Assets/Screenshots/metal-mac.png">
 </p>
 
 What changed compare to Friduric's original OpenGL implementation
