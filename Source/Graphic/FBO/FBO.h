@@ -9,8 +9,8 @@ public:
 	FBO(uint32_t width, uint32_t height,
 		MTLPixelFormat colorFormat,
 		MTLPixelFormat depthFormat = MTLPixelFormatInvalid,
-		bool cube = false,
-		uint32_t samples = 1);
+		uint32_t samples = 1,
+		uint32_t layers = 1);
 	~FBO();
 	void activateAsTexture(id<MTLRenderCommandEncoder> encoder, uint32_t textureUnit = 0);
 	id<MTLRenderCommandEncoder> beginRenderPass(id<MTLCommandBuffer> commandBuffer,
@@ -24,8 +24,8 @@ public:
 private:
 	void initTextures(MTLPixelFormat colorFormat,
 					  MTLPixelFormat depthFormat,
-					  bool cube,
-					  uint32_t samples);
+					  uint32_t samples,
+					  uint32_t layers);
 	void initRenderPass();
 
 	id<MTLTexture> textureColorObject = nil;

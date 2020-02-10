@@ -6,18 +6,18 @@
 FBO::FBO(uint32_t w, uint32_t h,
 		 MTLPixelFormat colorFormat,
 		 MTLPixelFormat depthFormat,
-		 bool cube,
-		 uint32_t samples)
+		 uint32_t samples,
+		 uint32_t layers)
 	: width(w), height(h)
 {
-	initTextures(colorFormat, depthFormat, cube, samples);
+	initTextures(colorFormat, depthFormat, samples, layers);
 	initRenderPass();
 }
 
 void FBO::initTextures(MTLPixelFormat colorFormat,
 					   MTLPixelFormat depthFormat,
-					   bool cube,
-					   uint32_t samples)
+					   uint32_t samples,
+					   uint32_t layers)
 {
 	id<MTLDevice> metalDevice = Application::getInstance().graphics.getMetalDevice();
 
@@ -27,15 +27,10 @@ void FBO::initTextures(MTLPixelFormat colorFormat,
 	texDesc.height = height;
 	texDesc.storageMode = MTLStorageModePrivate;
 	texDesc.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
-	if (cube)
+	if (layers > 1)
 	{
-		texDesc.height = texDesc.width;
-		if (samples > 1)
-		{
-			NSLog(@"Metal doesn't support multisample cube texture");
-			abort();
-		}
-		texDesc.textureType = MTLTextureTypeCube;
+		texDesc.arrayLength = layers;
+		texDesc.textureType = (samples > 1) ? MTLTextureType2DMultisampleArray : MTLTextureType2DArray;
 	}
 	else
 	{
@@ -51,7 +46,7 @@ void FBO::initTextures(MTLPixelFormat colorFormat,
 	if (samples > 1)
 	{
 		texDesc.sampleCount = 1;
-		texDesc.textureType = MTLTextureType2D;
+		texDesc.textureType = (layers > 1) ? MTLTextureType2DArray : MTLTextureType2D;
 		resolveTextureColorObject = [metalDevice newTextureWithDescriptor:texDesc];
 	}
 
@@ -68,7 +63,7 @@ void FBO::initTextures(MTLPixelFormat colorFormat,
 		if (samples > 1)
 		{
 			texDesc.sampleCount = 1;
-			texDesc.textureType = MTLTextureType2D;
+			texDesc.textureType = resolveTextureColorObject.textureType;
 			resolveTextureDepthObject = [metalDevice newTextureWithDescriptor:texDesc];
 		}
 	}

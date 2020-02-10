@@ -28,8 +28,15 @@ public:
 	// Rendering.
 	MaterialSetting * materialSetting = nullptr;
 	void render(id<MTLRenderCommandEncoder> encoder);
+
+	// Generate dominant axis list for the triangles of this mesh
+	void computeDominantAxis(id<MTLComputeCommandEncoder> encoder);
 private:
-	void setupMeshRenderer();
-	void reuploadIndexDataToGPU();
+	void setupMeshRenderer(bool initDominantAxisBuffer);
+	void reuploadIndexDataToGPU(bool initDominantAxisBuffer);
 	void reuploadVertexDataToGPU();
+	void initComputeShader();
+
+	// Compute shader to generate dominant axis of each triangle
+	id<MTLComputePipelineState> dominantAxisCompute;
 };

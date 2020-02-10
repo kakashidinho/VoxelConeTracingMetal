@@ -5,6 +5,7 @@
 #include <MetalKit/MetalKit.h>
 #include <Metal/Metal.h>
 
+#include "ComputePipelineCache.h"
 #include "../Scene/Scene.h"
 #include "Material/Material.h"
 #include "Camera/OrthographicCamera.h"
@@ -41,6 +42,15 @@ public:
 	static constexpr uint32_t VOXEL_PROJ_BINDING = 2;
 	static constexpr uint32_t VERTEX_BUFFER_BINDING = 8;
 	static constexpr uint32_t INDEX_BUFFER_BINDING = 9;
+	static constexpr uint32_t TRI_DOMINANT_BUFFER_BINDING = 10;
+	static constexpr uint32_t COMPUTE_PARAM_START_IDX = 16;
+
+	// Voxel generation mode:
+	// Single pass voxelization projection might not work correctly with
+	// raster order group. Disable by default.
+	static constexpr bool VOXEL_SINGLE_PASS = false;
+
+	Graphics() : computePipelineCache(*this) {}
 
 	/// <summary> Initializes rendering. </summary>
 	virtual void init(id<MTLDevice> _metalDevice, unsigned int viewportWidth, unsigned int viewportHeight); // Called pre-render once per run.
@@ -55,6 +65,7 @@ public:
 	);
 
 	id<MTLDevice> getMetalDevice() { return metalDevice; }
+	ComputePipelineCache &getComputeCache() { return computePipelineCache; }
 	// ----------------
 	// Rendering.
 	// ----------------
@@ -95,6 +106,7 @@ private:
 					 unsigned int viewportWidth,
 					 unsigned int viewportHeight);
 	void renderQueue(id<MTLRenderCommandEncoder> encoder, const RenderingQueue &renderingQueue) const;
+	void genDominantAxisList(id<MTLComputeCommandEncoder> encoder, const RenderingQueue &renderingQueue) const;
 	void updateGlobalConstants(Scene & renderingScene);
 	void uploadGlobalConstants(id<MTLRenderCommandEncoder> encoder) const;
 
@@ -107,6 +119,8 @@ private:
 	id<MTLDepthStencilState> depthDisabledState;
 	id<MTLDepthStencilState> depthEnabledState;
 	void initMetalResources();
+
+	ComputePipelineCache computePipelineCache;
 
 	// ----------------
 	// Voxel cone tracing.

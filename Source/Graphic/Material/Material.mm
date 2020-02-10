@@ -53,6 +53,9 @@ Material::Material(const std::string & _name,
 	MTLFunctionConstantValues *shaderConstants = [[MTLFunctionConstantValues alloc] init];
 	[shaderConstants setConstantValue:&readWriteTextureSupported type:MTLDataTypeBool atIndex:0];
 
+	BOOL singlepassVoxelization = Graphics::VOXEL_SINGLE_PASS;
+	[shaderConstants setConstantValue:&singlepassVoxelization type:MTLDataTypeBool atIndex:1];
+
 	// Load shaders
 	auto library = Shader::loadMetalLibrary(metalDevice, shaderFile);
 	desc.vertexFunction = Shader::loadShader(library, shaderConstants, "VS");

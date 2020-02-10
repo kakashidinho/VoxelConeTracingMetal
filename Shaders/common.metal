@@ -53,9 +53,12 @@ struct ObjectState
 #define TRANSFORM_BINDING [[buffer(0)]]
 #define OBJECT_STATE_BINDING TRANSFORM_BINDING
 #define APPSTATE_BINDING [[buffer(1)]]
-#define VOXEL_PROJ_BINDING [[buffer(2)]]
+#define VOXEL_PROJ_BINDING_IDX 2
 #define VERTEX_BUFFER_BINDING [[buffer(8)]]
 #define INDEX_BUFFER_BINDING [[buffer(9)]]
+#define TRI_DOMINANT_BUFFER_BINDING_IDX 10
+#define TRI_DOMINANT_BUFFER_BINDING [[buffer(TRI_DOMINANT_BUFFER_BINDING_IDX)]]
+#define COMPUTE_PARAM_START_IDX 16
 
 constant bool kReadWriteTextureSupported[[function_constant(0)]];
 constant bool kReadWriteTextureNotSupported = !kReadWriteTextureSupported;

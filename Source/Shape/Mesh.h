@@ -20,6 +20,10 @@ public:
 	std::vector<unsigned int> indices;
 
 	id<MTLBuffer> vbo, ebo; // Vertex Buffer Object, Element Buffer Object.
+
+	// Buffer to store the dominant axis of each triangle inside this mesh
+	id<MTLBuffer> triDominantAxisBuffer = nil;
+
 	bool meshUploaded = false;
 private:
 	static unsigned int idCounter;

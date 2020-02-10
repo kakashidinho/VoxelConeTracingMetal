@@ -56,6 +56,7 @@
 		0A8FAE9623F093EC0072FE8C /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A8FAE9423F093EC0072FE8C /* Metal.framework */; };
 		0A8FAE9823F093F40072FE8C /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A8FAE9723F093F40072FE8C /* Cocoa.framework */; };
 		0A8FAE9A23F093F90072FE8C /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A8FAE9923F093F90072FE8C /* QuartzCore.framework */; };
+		0ADB7F0D23F1875200176016 /* ComputePipelineCache.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0ADB7F0C23F1875200176016 /* ComputePipelineCache.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -141,6 +142,8 @@
 		0A8FAE9423F093EC0072FE8C /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		0A8FAE9723F093F40072FE8C /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		0A8FAE9923F093F90072FE8C /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		0ADB7F0C23F1875200176016 /* ComputePipelineCache.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ComputePipelineCache.mm; sourceTree = "<group>"; usesTabs = 1; };
+		0ADB7F0E23F1876700176016 /* ComputePipelineCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ComputePipelineCache.h; sourceTree = "<group>"; usesTabs = 1; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -246,6 +249,8 @@
 				0A8FAE3D23F090E20072FE8C /* Texture3D.h */,
 				0A8FAE4823F090E20072FE8C /* Graphics.mm */,
 				0A8FAE4723F090E20072FE8C /* Texture3D.mm */,
+				0ADB7F0C23F1875200176016 /* ComputePipelineCache.mm */,
+				0ADB7F0E23F1876700176016 /* ComputePipelineCache.h */,
 				0A8FAE3E23F090E20072FE8C /* Camera */,
 				0A8FAE4923F090E20072FE8C /* FBO */,
 				0A8FAE4C23F090E20072FE8C /* Lighting */,
@@ -506,6 +511,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0ADB7F0D23F1875200176016 /* ComputePipelineCache.mm in Sources */,
 				0A8FAE7723F090E20072FE8C /* Mesh.mm in Sources */,
 				0A8FAE8023F090E20072FE8C /* FBO.mm in Sources */,
 				0A8FAE8623F090E20072FE8C /* AppDelegate.m in Sources */,

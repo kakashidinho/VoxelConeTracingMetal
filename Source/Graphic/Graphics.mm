@@ -173,6 +173,13 @@ void Graphics::renderQueue(id<MTLRenderCommandEncoder> encoder, const RenderingQ
 	}
 }
 
+void Graphics::genDominantAxisList(id<MTLComputeCommandEncoder> encoder, const RenderingQueue &renderingQueue) const
+{
+	for (unsigned int i = 0; i < renderingQueue.size(); ++i) if (renderingQueue[i]->enabled) {
+		renderingQueue[i]->computeDominantAxis(encoder);
+	}
+}
+
 // ----------------------
 // Voxelization.
 // ----------------------
@@ -189,19 +196,27 @@ void Graphics::initVoxelization()
 	dummyVoxelizationFbo = new FBO(voxelTextureSize, voxelTextureSize,
 								   MTLPixelFormatRGBA8Unorm,
 								   MTLPixelFormatInvalid,
-								   false,
-								   8);
+								   8,
+								   VOXEL_SINGLE_PASS ? 3 : 1);
 }
 
 void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 						Scene & renderingScene, bool clearVoxelization)
 {
+	id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
+	// Clear voxel texture
 	if (clearVoxelization) {
-		auto computeEncoder = [commandBuffer computeCommandEncoder];
 		float clearColor[4] = { 0, 0, 0, 0 };
 		voxelTexture->clear(computeEncoder, clearColor);
-		[computeEncoder endEncoding];
 	}
+
+	// Multipass: Generate dominant axis list for every triangle
+	if (!VOXEL_SINGLE_PASS)
+	{
+		genDominantAxisList(computeEncoder, renderingScene.renderers);
+	}
+
+	[computeEncoder endEncoding];
 
 	auto renderEncoder = dummyVoxelizationFbo->beginRenderPass(commandBuffer,
 															   MTLLoadActionDontCare,
@@ -220,13 +235,23 @@ void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 	voxelTexture->activate(renderEncoder, 2);
 
 	// ----- Render.
-	// Use 3 projection passes.
-	// This is because we need to use independent raster order groups for each direction
-	for (uint32_t i = 0; i < 3; ++i)
+	if (VOXEL_SINGLE_PASS)
 	{
-		[renderEncoder setVertexBytes:&i length:sizeof(i) atIndex:VOXEL_PROJ_BINDING];
+		// We will render to 3 slices of dummy render target. Each slice represents
+		// one projection axis. The primitives will only be sent to the slice of its dominant axis
 		renderQueue(renderEncoder, renderingScene.renderers);
 	}
+	else
+	{
+		// Multipass:
+		// We render in 3 passes. Each pass project the object onto a basic X/Y/Z plane
+		for (uint32_t i = 0; i < 3; ++i)
+		{
+			[renderEncoder setVertexBytes:&i length:sizeof(i) atIndex:VOXEL_PROJ_BINDING];
+			renderQueue(renderEncoder, renderingScene.renderers);
+		}
+	}
+
 	[renderEncoder endEncoding];
 
 	// Mipmap generation

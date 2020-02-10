@@ -47,17 +47,10 @@ void Texture3D::initTexture()
 
 void Texture3D::initComputeShader()
 {
-	id<MTLDevice> metalDevice = Application::getInstance().graphics.getMetalDevice();
-	auto library = Shader::loadMetalLibrary(metalDevice, "Shaders/Voxelization/voxel_compute_kernels");
-	auto shader = [library newFunctionWithName:@"clear"];
+	auto &graphics = Application::getInstance().graphics;
+	auto library = graphics.getComputeCache().getLibrary("Shaders/Voxelization/voxel_compute_kernels");
 
-	NSError *err = nil;
-	clearPipelineState = [metalDevice newComputePipelineStateWithFunction:shader error:&err];
-	if (!clearPipelineState && err)
-	{
-		NSLog(@"Compute pipeline compiled failed error=%@", [err localizedDescription]);
-		abort();
-	}
+	clearPipelineState = graphics.getComputeCache().getComputeShader("voxel_clear", library, "clear");
 }
 
 void Texture3D::activate(id<MTLRenderCommandEncoder> encoder, uint32_t textureUnit)
@@ -98,7 +91,7 @@ void Texture3D::dispatchCompute(id<MTLComputeCommandEncoder> computeEncoder,
 void Texture3D::clear(id<MTLComputeCommandEncoder> computeEncoder, float clearColor[4])
 {
 	[computeEncoder setComputePipelineState:clearPipelineState];
-	[computeEncoder setBytes:clearColor length:4 * sizeof(float) atIndex:0];
+	[computeEncoder setBytes:clearColor length:4 * sizeof(float) atIndex:Graphics::COMPUTE_PARAM_START_IDX];
 
 	for (auto levelView : textureObjectViews)
 	{
