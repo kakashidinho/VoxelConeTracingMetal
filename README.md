@@ -6,7 +6,7 @@ https://github.com/Friduric/voxel-cone-tracing.
 
 Since original Voxel Cone Tracing makes use of Geometry Shader (typically available in OpenGL and Direct3D),
 and Metal doesn't support Geometry Shader, this project experiments some alternative ways to implement
-this technique in Metal.
+this technique with Metal.
 
 <p align="center">
 <img src="https://github.com/kakashidinho/VoxelConeTracingMetal/blob/master/Assets/Screenshots/metal-mac.png">
@@ -32,3 +32,14 @@ Build Requirements
 -------
 * Requires MacOS 10.14+ and Xcode 10+.
 * Requires no additional third-party libraries except math library glm.
+
+Demo Hotkeys
+-------
+* A, S, W, D to move.
+* Mouse to look around.
+* T to pause the animation of some objects.
+* R to switch to voxel visualization mode.
+    - X, Z to control the level of details of the voxel visualizaton.
+* U to toggle Indirect Diffuse Lighting.
+* P to toggle Indirect Specular Lighting.
+* C to toggle Shadow.
