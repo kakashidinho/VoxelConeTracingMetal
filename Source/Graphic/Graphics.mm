@@ -51,16 +51,8 @@ void Graphics::init(id<MTLDevice> _metalDevice, unsigned int viewportWidth, unsi
 {
 	metalDevice = _metalDevice;
 
-	BOOL macGpuFamily2 = NO;
-#ifdef __MAC_10_14
-	macGpuFamily2 = [metalDevice supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily2_v1];
-#endif
-	if (!macGpuFamily2 &&
-		!metalDevice.rasterOrderGroupsSupported)
-	{
-		NSLog(@"Voxel Cone Tracing requires Raster Order Group capability in GPU");
-		abort();
-	}
+	// Use single pass voxelization and atomic buffer if raster order group is not supported
+	singlePassVoxelization = !metalDevice.rasterOrderGroupsSupported;
 
 	initMetalResources();
 
@@ -160,6 +152,9 @@ void Graphics::updateGlobalConstants(Scene &renderingScene)
 	globalConstants.V = camera.viewMatrix;
 	globalConstants.P = camera.getProjectionMatrix();
 	globalConstants.cameraPosition = camera.position;
+
+	// Texture info
+	globalConstants.voxelTextureSize = voxelTextureSize;
 }
 
 void Graphics::uploadGlobalConstants(id<MTLRenderCommandEncoder> encoder) const
@@ -197,10 +192,17 @@ void Graphics::initVoxelization()
 	// Voxel texture
 	voxelTexture = new Texture3D(voxelTextureSize, voxelTextureSize, voxelTextureSize);
 
+	// Voxel atomic buffer is needed if raster order group is not supported
+	if (singlePassVoxelization)
+	{
+		voxelAtomicBuffer = [metalDevice newBufferWithLength: 4 * voxelTextureSize * voxelTextureSize * voxelTextureSize
+													 options:MTLResourceStorageModePrivate];
+	}
+
 	// Dummy render target
 	// In single pass mode: we use 3 portions of texture to represent 3 planes X & Y & Z
 	// to project the triangle to
-	dummyVoxelizationFbo = new FBO(VOXEL_SINGLE_PASS ? (3 * voxelTextureSize) : voxelTextureSize,
+	dummyVoxelizationFbo = new FBO(singlePassVoxelization ? (3 * voxelTextureSize) : voxelTextureSize,
 								   voxelTextureSize,
 								   MTLPixelFormatRGBA8Unorm,
 								   MTLPixelFormatInvalid,
@@ -223,66 +225,19 @@ id<MTLRenderCommandEncoder> Graphics::setupVoxelWritingPass(id<MTLCommandBuffer>
 	[renderEncoder setCullMode:MTLCullModeNone];
 	[renderEncoder setDepthStencilState:depthDisabledState];
 
-	// Output 3D Texture.
-	voxelTexture->activate(renderEncoder, 2);
-
 	return renderEncoder;
 }
 
 void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 						Scene & renderingScene, bool clearVoxelization)
 {
-	id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
-	// Clear voxel texture
-	if (clearVoxelization) {
-		float clearColor[4] = { 0, 0, 0, 0 };
-		voxelTexture->clear(computeEncoder, clearColor);
-	}
-
-	// Multipass: Generate dominant axis list for every triangle
-	if (!VOXEL_SINGLE_PASS)
+	if (singlePassVoxelization)
 	{
-		genDominantAxisList(computeEncoder, renderingScene.renderers);
-	}
-
-	[computeEncoder endEncoding];
-
-	// ----- Render.
-	if (VOXEL_SINGLE_PASS)
-	{
-		// We will render to 3 portions of dummy render target. Each portion represents
-		// one projection axis. The primitives will only be sent to the portion representing its dominant axis
-		auto renderEncoder = setupVoxelWritingPass(commandBuffer);
-
-		MTLViewport viewports[] = {
-			viewport(0, 0, voxelTextureSize, voxelTextureSize),
-			viewport(voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
-			viewport(2 * voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
-		};
-		[renderEncoder setViewports:viewports count:3];
-
-		renderQueue(renderEncoder, renderingScene.renderers);
-
-		[renderEncoder endEncoding];
+		voxelizeSinglePass(commandBuffer, renderingScene, clearVoxelization);
 	}
 	else
 	{
-		// Multipass:
-		// We render in 3 passes. Each pass project the object onto a basic X/Y/Z plane
-		for (uint32_t i = 0; i < 3; ++i)
-		{
-			auto renderEncoder = setupVoxelWritingPass(commandBuffer);
-#ifdef DEBUG
-			renderEncoder.label = [NSString stringWithFormat:@"Voxel writing pass %u", i];
-#endif
-			[renderEncoder setViewport:viewport(voxelTextureSize, voxelTextureSize)];
-			[renderEncoder setVertexBytes:&i length:sizeof(i) atIndex:VOXEL_PROJ_BINDING];
-
-			renderQueue(renderEncoder, renderingScene.renderers);
-
-			// End the render pass to make sure the voxel writing is visible to next projection pass
-			[renderEncoder endEncoding];
-		}
+		voxelizeMultiPass(commandBuffer, renderingScene, clearVoxelization);
 	}
 
 	// Mipmap generation
@@ -291,6 +246,89 @@ void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 		voxelTexture->generateMips(blitEncoder);
 		regenerateMipmapQueued = false;
 		[blitEncoder endEncoding];
+	}
+}
+
+void Graphics::voxelizeSinglePass(id<MTLCommandBuffer> commandBuffer,
+								  Scene & renderingScene,
+								  bool clearVoxelizationFirst)
+{
+	id<MTLComputeCommandEncoder> computeEncoder = nil;
+	// Clear voxel texture
+	if (clearVoxelizationFirst) {
+		computeEncoder = [commandBuffer computeCommandEncoder];
+		float clearColor[4] = { 0, 0, 0, 0 };
+		// Only clear levels starting from 1. The first level will be filled ourselves
+		voxelTexture->clear(computeEncoder, clearColor, 1);
+		[computeEncoder endEncoding];
+
+		// Clear atomic buffer
+		auto blitEncoder = [commandBuffer blitCommandEncoder];
+		[blitEncoder fillBuffer:voxelAtomicBuffer range:NSMakeRange(0, voxelAtomicBuffer.length) value:0];
+		[blitEncoder endEncoding];
+	}
+
+	// Single pass voxelization only works with atomic buffer.
+	// Using raster order groups with texture write won't work correctly due to cross plane race condition.
+
+	// We will render to 3 portions of dummy render target. Each portion represents
+	// one projection axis. The primitives will only be sent to the portion representing its dominant axis.
+	// The result voxel data will be written to an atomic buffer.
+	auto renderEncoder = setupVoxelWritingPass(commandBuffer);
+
+	MTLViewport viewports[] = {
+		viewport(0, 0, voxelTextureSize, voxelTextureSize),
+		viewport(voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
+		viewport(2 * voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
+	};
+	[renderEncoder setViewports:viewports count:3];
+	// Output buffer
+	[renderEncoder setFragmentBuffer:voxelAtomicBuffer offset:0 atIndex:VOXEL_ATOMIC_BUFFER_BINDING];
+
+	// Rasterize the scene
+	renderQueue(renderEncoder, renderingScene.renderers);
+
+	[renderEncoder endEncoding];
+
+	// Copy data from buffer to voxel texture.
+	computeEncoder = [commandBuffer computeCommandEncoder];
+	voxelTexture->copyFirstLevelFromBuffer(computeEncoder, voxelAtomicBuffer);
+	[computeEncoder endEncoding];
+}
+void Graphics::voxelizeMultiPass(id<MTLCommandBuffer> commandBuffer,
+								 Scene & renderingScene,
+								 bool clearVoxelizationFirst)
+{
+	id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
+	// Clear voxel texture
+	if (clearVoxelizationFirst) {
+		float clearColor[4] = { 0, 0, 0, 0 };
+		voxelTexture->clear(computeEncoder, clearColor, 0);
+	}
+
+	// Multipass:
+	// Generate dominant axist list for every triangle
+	genDominantAxisList(computeEncoder, renderingScene.renderers);
+	[computeEncoder endEncoding];
+
+	// We render in 3 passes. Each pass project the object onto a basic X/Y/Z plane
+	for (uint32_t i = 0; i < 3; ++i)
+	{
+		auto renderEncoder = setupVoxelWritingPass(commandBuffer);
+#ifdef DEBUG
+		renderEncoder.label = [NSString stringWithFormat:@"Voxel writing pass %u", i];
+#endif
+		[renderEncoder setViewport:viewport(voxelTextureSize, voxelTextureSize)];
+		[renderEncoder setVertexBytes:&i length:sizeof(i) atIndex:VOXEL_PROJ_BINDING];
+
+		// Output 3D Texture.
+		voxelTexture->activate(renderEncoder, 2);
+
+		// Rasterize the scene
+		renderQueue(renderEncoder, renderingScene.renderers);
+
+		// End the render pass to make sure the voxel writing is visible to next projection pass
+		[renderEncoder endEncoding];
 	}
 }
 

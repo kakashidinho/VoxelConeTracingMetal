@@ -21,6 +21,22 @@ kernel void clear(uint3 idx[[thread_position_in_grid]],
     textureVoxel.write(params.color, idx);
 }
 
+kernel void copyRgba8Buffer(uint3 idx[[thread_position_in_grid]],
+                            const device uint *bufferVoxel [[buffer(0)]],
+                            texture3d<float, access::write> textureVoxel [[texture(0)]],
+                            constant ClearParams &params [[buffer(COMPUTE_PARAM_START_IDX)]])
+{
+    uint3 dim = uint3(textureVoxel.get_width(), textureVoxel.get_height(), textureVoxel.get_depth());
+    if (idx.x >= dim.x || idx.y >= dim.y || idx.z >= dim.z)
+        return;
+
+    uint idx1D = idx.z * (dim.x * dim.y) +
+                 idx.y * dim.x +
+                 idx.x;
+
+    float4 color = rgba8ToVec4(bufferVoxel[idx1D]) / 255.0;
+    textureVoxel.write(color, idx);
+}
 
 struct VS_in
 {

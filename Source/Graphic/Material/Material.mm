@@ -50,11 +50,14 @@ Material::Material(const std::string & _name,
 	// Verify that we can read and write texture in shader at the same time
 	id<MTLDevice> metalDevice = Application::getInstance().graphics.getMetalDevice();
 	BOOL readWriteTextureSupported = metalDevice.readWriteTextureSupport == MTLReadWriteTextureTier2;
+	BOOL rasterOrderGroupsSupported = metalDevice.rasterOrderGroupsSupported;
+
 	MTLFunctionConstantValues *shaderConstants = [[MTLFunctionConstantValues alloc] init];
 	[shaderConstants setConstantValue:&readWriteTextureSupported type:MTLDataTypeBool atIndex:0];
+	[shaderConstants setConstantValue:&rasterOrderGroupsSupported type:MTLDataTypeBool atIndex:1];
 
-	BOOL singlepassVoxelization = Graphics::VOXEL_SINGLE_PASS;
-	[shaderConstants setConstantValue:&singlepassVoxelization type:MTLDataTypeBool atIndex:1];
+	BOOL singlepassVoxelization = Application::getInstance().graphics.isSinglePassVoxelization();
+	[shaderConstants setConstantValue:&singlepassVoxelization type:MTLDataTypeBool atIndex:2];
 
 	// Load shaders
 	auto library = Shader::loadMetalLibrary(metalDevice, shaderFile);

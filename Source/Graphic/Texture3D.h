@@ -12,11 +12,14 @@ public:
 	void activate(id<MTLRenderCommandEncoder> encoder, uint32_t textureUnit = 0);
 
 	/// <summary> Clears this texture using a given clear color. </summary>
-	void clear(id<MTLComputeCommandEncoder> computeEncoder, float clearColor[4]);
+	void clear(id<MTLComputeCommandEncoder> computeEncoder, float clearColor[4], uint32_t startLevel);
 
 	/// <summary> Generate mipmaps
 	void generateMips(id<MTLBlitCommandEncoder> encoder);
 	void generateMips(id<MTLComputeCommandEncoder> encoder);
+
+	/// Copy RGBA8 pixel from buffer to texture
+	void copyFirstLevelFromBuffer(id<MTLComputeCommandEncoder> encoder, id<MTLBuffer> buffer);
 
 	Texture3D(const uint32_t width, const uint32_t height, const uint32_t depth);
 private:
@@ -32,4 +35,5 @@ private:
 	std::vector<id<MTLTexture>> textureObjectViews;
 
 	id<MTLComputePipelineState> clearPipelineState;
+	id<MTLComputePipelineState> copyBufferPipelineState;
 };

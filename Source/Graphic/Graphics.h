@@ -43,12 +43,9 @@ public:
 	static constexpr uint32_t VERTEX_BUFFER_BINDING = 8;
 	static constexpr uint32_t INDEX_BUFFER_BINDING = 9;
 	static constexpr uint32_t TRI_DOMINANT_BUFFER_BINDING = 10;
+	static constexpr uint32_t VOXEL_ATOMIC_BUFFER_BINDING = 11;
 	static constexpr uint32_t COMPUTE_PARAM_START_IDX = 16;
 
-	// Voxel generation mode:
-	// Single pass voxelization projection might not work correctly with
-	// raster order group. Disable by default.
-	static constexpr bool VOXEL_SINGLE_PASS = false;
 	static constexpr int VOXEL_RENDER_TARGET_SAMPLES = 8;
 
 	Graphics() : computePipelineCache(*this) {}
@@ -81,6 +78,8 @@ public:
 	bool voxelizationQueued = true;
 	int voxelizationSparsity = 1; // Number of ticks between mipmap generation.
 	// (voxelization sparsity gives unstable framerates, so not sure if it's worth it in interactive applications.)
+	// This parameter is immutable after setup
+	bool isSinglePassVoxelization() const { return singlePassVoxelization; }
 
 	~Graphics();
 private:
@@ -94,8 +93,13 @@ private:
 		glm::mat4 P;
 		glm::vec3 cameraPosition;
 
+		// 3D texture size
+		uint32_t voxelTextureSize;
+
 		// Debug state
-		int state;
+		int32_t state;
+
+		uint32_t padding[3];
 	};
 
 	// ----------------
@@ -119,6 +123,7 @@ private:
 	id<MTLDevice> metalDevice;
 	id<MTLDepthStencilState> depthDisabledState;
 	id<MTLDepthStencilState> depthEnabledState;
+	id<MTLBuffer> voxelAtomicBuffer = nil;
 	void initMetalResources();
 
 	ComputePipelineCache computePipelineCache;
@@ -131,6 +136,7 @@ private:
 	// ----------------
 	// Voxelization.
 	// ----------------
+	bool singlePassVoxelization = false;
 	int ticksSinceLastVoxelization = voxelizationSparsity;
 	uint32_t voxelTextureSize = 64; // Must be set to a power of 2.
 	OrthographicCamera voxelCamera;
@@ -139,6 +145,12 @@ private:
 	void initVoxelization();
 	id<MTLRenderCommandEncoder> setupVoxelWritingPass(id<MTLCommandBuffer> commandBuffer);
 	void voxelize(id<MTLCommandBuffer> commandBuffer, Scene & renderingScene, bool clearVoxelizationFirst = true);
+	void voxelizeSinglePass(id<MTLCommandBuffer> commandBuffer,
+							Scene & renderingScene,
+							bool clearVoxelizationFirst);
+	void voxelizeMultiPass(id<MTLCommandBuffer> commandBuffer,
+						   Scene & renderingScene,
+						   bool clearVoxelizationFirst);
 
 	// ----------------
 	// Voxelization visualization.

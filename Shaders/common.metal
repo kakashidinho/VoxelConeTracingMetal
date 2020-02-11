@@ -38,6 +38,9 @@ struct AppState
     float4x4 P;
     packed_float3 cameraPosition;
 
+    // Voxel texture info
+    uint voxelTextureSize;
+
     // Debug state
     int state;
 };
@@ -58,10 +61,13 @@ struct ObjectState
 #define INDEX_BUFFER_BINDING [[buffer(9)]]
 #define TRI_DOMINANT_BUFFER_BINDING_IDX 10
 #define TRI_DOMINANT_BUFFER_BINDING [[buffer(TRI_DOMINANT_BUFFER_BINDING_IDX)]]
+#define VOXEL_ATOMIC_BUFFER_BINDING_IDX 11
+#define VOXEL_ATOMIC_BUFFER_BINDING [[buffer(VOXEL_ATOMIC_BUFFER_BINDING_IDX)]]
 #define COMPUTE_PARAM_START_IDX 16
 
 constant bool kReadWriteTextureSupported[[function_constant(0)]];
-constant bool kReadWriteTextureNotSupported = !kReadWriteTextureSupported;
+constant bool kRasterOrderGroupSupported [[function_constant(1)]];
+constant bool kVoxelizationSinglePass[[function_constant(2)]];
 
 static constexpr sampler gCommonTextureSampler (mag_filter::linear, min_filter::linear, mip_filter::linear,
                                                 s_address::repeat,
@@ -73,6 +79,20 @@ static inline
 float4 worldTransform(constant ObjectState &transform, float4 pos)
 {
     return (transform.M * pos);
+}
+
+static inline
+float4 rgba8ToVec4(uint val)
+{
+    float4 re = float4(val & 0xff, (val & 0xff00) >> 8, (val & 0xff0000) >> 16, (val & 0xff000000) >> 24);
+    return re;
+}
+
+static inline
+uint vec4ToRgba8(float4 val)
+{
+    uint4 ival = uint4(val);
+    return (ival.x & 0xff) | ((ival.y & 0xff) << 8) | ((ival.z & 0xff) << 16) | ((ival.w & 0xff) << 24);
 }
 
 

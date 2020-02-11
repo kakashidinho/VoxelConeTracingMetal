@@ -8,10 +8,12 @@
 
 #include "../common.metal"
 
-using namespace metal;
-
-constant bool kVoxelizationSinglePass[[function_constant(1)]];
 constant bool kVoxelizationMultiPass = !kVoxelizationSinglePass;
+constant bool kUseRWTexture = kReadWriteTextureSupported && kRasterOrderGroupSupported;
+constant bool kUseWTexture = !kUseRWTexture && kRasterOrderGroupSupported;
+constant bool kUseAtomicBuffer = !kUseRWTexture && !kUseWTexture;
+
+using namespace metal;
 
 struct VS_out
 {
@@ -115,6 +117,7 @@ vertex VS_out VS(uint vid [[ vertex_id ]],
 static inline
 float attenuate(float dist){ dist *= DIST_FACTOR; return 1.0f / (CONSTANT + LINEAR * dist + QUADRATIC * dist * dist); }
 
+static inline
 float3 calculatePointLight(VS_out in, constant PointLight& light){
     const float3 direction = normalize(light.position - in.worldPosition);
     const float distanceToLight = distance(float3(light.position), in.worldPosition);
@@ -123,13 +126,15 @@ float3 calculatePointLight(VS_out in, constant PointLight& light){
     return d * POINT_LIGHT_INTENSITY * attenuation * light.color;
 }
 
+static inline
 float3 scaleAndBias(float3 p) { return 0.5f * p + float3(0.5f); }
 
 fragment void FS(VS_out in [[stage_in]],
                  constant AppState& appState APPSTATE_BINDING,
                  constant ObjectState &objectState OBJECT_STATE_BINDING,
-                 texture3d<float, access::read_write> textureVoxelRW [[texture(2), raster_order_group(0), function_constant(kReadWriteTextureSupported)]],
-                 texture3d<float, access::write> textureVoxelW [[texture(2), raster_order_group(0), function_constant(kReadWriteTextureNotSupported)]])
+                 texture3d<float, access::read_write> textureVoxelRW [[texture(2), raster_order_group(0), function_constant(kUseRWTexture)]],
+                 texture3d<float, access::write> textureVoxelW [[texture(2), raster_order_group(0), function_constant(kUseWTexture)]],
+                 device atomic_uint *bufferVoxel [[buffer(VOXEL_ATOMIC_BUFFER_BINDING_IDX), function_constant(kUseAtomicBuffer)]])
 {
     float3 color = float3(0.0f);
     if(!isInsideCube(in.worldPosition, 0)) return;
@@ -145,18 +150,33 @@ fragment void FS(VS_out in [[stage_in]],
     float3 voxel = scaleAndBias(in.worldPosition);
     float alpha = pow(1 - objectState.material.transparency, 4); // For soft shadows to work better with transparent materials.
     float4 res = alpha * float4(float3(color), 1);
-    if (kReadWriteTextureSupported)
+
+    uint3 dim = uint3(appState.voxelTextureSize, appState.voxelTextureSize, appState.voxelTextureSize);
+    uint3 coords = uint3(int3(float3(dim) * voxel));
+    if (kUseRWTexture)
     {
-        int3 dim = int3(textureVoxelRW.get_width(), textureVoxelRW.get_height(), textureVoxelRW.get_depth());
-        uint3 coords = uint3(int3(float3(dim) * voxel));
         // max blend
         res = max(res, textureVoxelRW.read(coords));
         textureVoxelRW.write(res, coords);
     }
+    else if (kUseWTexture)
+    {
+        textureVoxelW.write(res, coords);
+    }
     else
     {
-        int3 dim = int3(textureVoxelW.get_width(), textureVoxelW.get_height(), textureVoxelW.get_depth());
-        uint3 coords = uint3(int3(float3(dim) * voxel));
-        textureVoxelW.write(res, coords);
+        // Use atomic buffer in case Raster order group feature is not supported
+        uint idx1D = coords.z * (appState.voxelTextureSize * appState.voxelTextureSize) +
+                     coords.y * appState.voxelTextureSize +
+                     coords.x;
+        res *= 255.0;
+        uint prevValue = 0;
+        uint newValue = vec4ToRgba8(res);
+        while (!atomic_compare_exchange_weak_explicit(&bufferVoxel[idx1D], &prevValue, newValue, memory_order_relaxed, memory_order_relaxed))
+        {
+            float4 storedColor = rgba8ToVec4(prevValue);
+            res = max(res, storedColor);
+            newValue = vec4ToRgba8(res);
+        }
     }
 }

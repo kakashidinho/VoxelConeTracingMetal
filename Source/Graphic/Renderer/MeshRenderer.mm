@@ -33,7 +33,7 @@ MeshRenderer::MeshRenderer(Mesh * _mesh, MaterialSetting * _materialSetting)
 	mesh = _mesh;
 
 	// Dominant axis buffer will be needed for multipass voxelization
-	setupMeshRenderer(!Graphics::VOXEL_SINGLE_PASS);
+	setupMeshRenderer(!Application::getInstance().graphics.isSinglePassVoxelization());
 }
 
 void MeshRenderer::setupMeshRenderer(bool initDominantAxisBuffer)

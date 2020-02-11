@@ -51,6 +51,7 @@ void Texture3D::initComputeShader()
 	auto library = graphics.getComputeCache().getLibrary("Shaders/Voxelization/voxel_compute_kernels");
 
 	clearPipelineState = graphics.getComputeCache().getComputeShader("voxel_clear", library, "clear");
+	copyBufferPipelineState = graphics.getComputeCache().getComputeShader("voxel_copyFromBuffer", library, "copyRgba8Buffer");
 }
 
 void Texture3D::activate(id<MTLRenderCommandEncoder> encoder, uint32_t textureUnit)
@@ -88,13 +89,14 @@ void Texture3D::dispatchCompute(id<MTLComputeCommandEncoder> computeEncoder,
 	[computeEncoder dispatchThreadgroups:groups threadsPerThreadgroup:threadsPerThreadgroup];
 }
 
-void Texture3D::clear(id<MTLComputeCommandEncoder> computeEncoder, float clearColor[4])
+void Texture3D::clear(id<MTLComputeCommandEncoder> computeEncoder, float clearColor[4], uint32_t startLevel)
 {
 	[computeEncoder setComputePipelineState:clearPipelineState];
 	[computeEncoder setBytes:clearColor length:4 * sizeof(float) atIndex:Graphics::COMPUTE_PARAM_START_IDX];
 
-	for (auto levelView : textureObjectViews)
+	for (uint32_t i = startLevel; i < textureObjectViews.size(); ++i)
 	{
+		auto levelView = textureObjectViews[i];
 		[computeEncoder setTexture:levelView atIndex:0];
 		dispatchCompute(computeEncoder,
 						clearPipelineState.threadExecutionWidth,
@@ -112,4 +114,13 @@ void Texture3D::generateMips(id<MTLComputeCommandEncoder> encoder)
 {
 	// TODO: compute shader verstion
 	abort();
+}
+
+void Texture3D::copyFirstLevelFromBuffer(id<MTLComputeCommandEncoder> encoder, id<MTLBuffer> buffer)
+{
+	[encoder setComputePipelineState:copyBufferPipelineState];
+	[encoder setTexture:textureObject atIndex:0];
+	[encoder setBuffer:buffer offset:0 atIndex:0];
+
+	dispatchCompute(encoder, copyBufferPipelineState.threadExecutionWidth, MTLSizeMake(width, height, depth));
 }
