@@ -20,7 +20,6 @@ struct VS_out
     float3 worldPosition [[user(locn0)]];
     float3 normal [[user(locn1)]];
     float4 gl_Position [[position]];
-    uint layer [[viewport_array_index, function_constant(kVoxelizationSinglePass)]];
 };
 
 struct VS_in
@@ -97,10 +96,9 @@ vertex VS_out VS(uint vid [[ vertex_id ]],
             dominantAxis = 1;
         }
 
-        // In single pass mode, we only project the triangle to the slice representing its
+        // In single pass mode, we only project the triangle to the plane representing its
         // dominant axis
         out.gl_Position = float4(projectOnAxis(out.worldPosition, dominantAxis), 1);
-        out.layer = dominantAxis;
     }
 
     out.normal = normalize(float3x3(transform.invTransM[0].xyz, transform.invTransM[1].xyz, transform.invTransM[2].xyz) * float3(in.normal));

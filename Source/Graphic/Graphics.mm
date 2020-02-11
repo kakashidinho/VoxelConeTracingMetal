@@ -202,7 +202,7 @@ void Graphics::initVoxelization()
 	// Dummy render target
 	// In single pass mode: we use 3 portions of texture to represent 3 planes X & Y & Z
 	// to project the triangle to
-	dummyVoxelizationFbo = new FBO(singlePassVoxelization ? (3 * voxelTextureSize) : voxelTextureSize,
+	dummyVoxelizationFbo = new FBO(voxelTextureSize,
 								   voxelTextureSize,
 								   MTLPixelFormatRGBA8Unorm,
 								   MTLPixelFormatInvalid,
@@ -270,18 +270,10 @@ void Graphics::voxelizeSinglePass(id<MTLCommandBuffer> commandBuffer,
 
 	// Single pass voxelization only works with atomic buffer.
 	// Using raster order groups with texture write won't work correctly due to cross plane race condition.
-
-	// We will render to 3 portions of dummy render target. Each portion represents
-	// one projection axis. The primitives will only be sent to the portion representing its dominant axis.
-	// The result voxel data will be written to an atomic buffer.
+	// In vertex shader, project the triangles to their dominant axis' plane.
 	auto renderEncoder = setupVoxelWritingPass(commandBuffer);
 
-	MTLViewport viewports[] = {
-		viewport(0, 0, voxelTextureSize, voxelTextureSize),
-		viewport(voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
-		viewport(2 * voxelTextureSize, 0, voxelTextureSize, voxelTextureSize),
-	};
-	[renderEncoder setViewports:viewports count:3];
+	[renderEncoder setViewport:viewport(voxelTextureSize, voxelTextureSize)];
 	// Output buffer
 	[renderEncoder setFragmentBuffer:voxelAtomicBuffer offset:0 atIndex:VOXEL_ATOMIC_BUFFER_BINDING];
 
