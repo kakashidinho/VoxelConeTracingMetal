@@ -172,16 +172,17 @@ kernel void generate3DMipmaps(uint lIndex [[thread_index_in_threadgroup]],
         float4 texel4 = OUT_OF_BOUND_CHECK(texel1, TEXEL_LOAD(lIndex + k3DMipGenThreadGroupXY), atEdge.z);
         // (x+1, y+1, z)
         float4 texel5 =
-            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (k3DMipGenThreadGroupX + 1)), atEdge.y);
+            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (k3DMipGenThreadGroupX + 1)), atEdge.x | atEdge.y);
         // (x+1, y, z+1)
         float4 texel6 =
-            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (k3DMipGenThreadGroupXY + 1)), atEdge.z);
+            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (k3DMipGenThreadGroupXY + 1)), atEdge.x | atEdge.z);
         // (x, y+1, z+1)
         float4 texel7 = OUT_OF_BOUND_CHECK(
-            texel3, TEXEL_LOAD(lIndex + (k3DMipGenThreadGroupXY + k3DMipGenThreadGroupX)), atEdge.z);
+            texel3, TEXEL_LOAD(lIndex + (k3DMipGenThreadGroupXY + k3DMipGenThreadGroupX)), atEdge.y | atEdge.z);
         // (x+1, y+1, z+1)
         float4 texel8 = OUT_OF_BOUND_CHECK(
-            texel5, TEXEL_LOAD(lIndex + (k3DMipGenThreadGroupXY + k3DMipGenThreadGroupX + 1)), atEdge.z);
+            texel5, TEXEL_LOAD(lIndex + (k3DMipGenThreadGroupXY + k3DMipGenThreadGroupX + 1)),
+            atEdge.x | atEdge.y | atEdge.z);
 
         texel1 = (texel1 + texel2 + texel3 + texel4 + texel5 + texel6 + texel7 + texel8) / 8.0;
 
@@ -216,16 +217,17 @@ kernel void generate3DMipmaps(uint lIndex [[thread_index_in_threadgroup]],
             OUT_OF_BOUND_CHECK(texel1, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupXY)), atEdge.z);
         // (x+1, y+1, z)
         float4 texel5 =
-            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupX + 2)), atEdge.y);
+            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupX + 2)), atEdge.x | atEdge.y);
         // (x+1, y, z+1)
         float4 texel6 =
-            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupXY + 2)), atEdge.z);
+            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupXY + 2)), atEdge.x | atEdge.z);
         // (x, y+1, z+1)
         float4 texel7 = OUT_OF_BOUND_CHECK(
-            texel3, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupXY + 2 * k3DMipGenThreadGroupX)), atEdge.z);
+            texel3, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupXY + 2 * k3DMipGenThreadGroupX)), atEdge.y | atEdge.z);
         // (x+1, y+1, z+1)
         float4 texel8 = OUT_OF_BOUND_CHECK(
-            texel5, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupXY + 2 * k3DMipGenThreadGroupX + 2)), atEdge.z);
+            texel5, TEXEL_LOAD(lIndex + (2 * k3DMipGenThreadGroupXY + 2 * k3DMipGenThreadGroupX + 2)),
+            atEdge.x | atEdge.y | atEdge.z);
 
         texel1 = (texel1 + texel2 + texel3 + texel4 + texel5 + texel6 + texel7 + texel8) / 8.0;
 
@@ -260,16 +262,17 @@ kernel void generate3DMipmaps(uint lIndex [[thread_index_in_threadgroup]],
             OUT_OF_BOUND_CHECK(texel1, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupXY)), atEdge.z);
         // (x+1, y+1, z)
         float4 texel5 =
-            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupX + 4)), atEdge.y);
+            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupX + 4)), atEdge.x | atEdge.y);
         // (x+1, y, z+1)
         float4 texel6 =
-            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupXY + 4)), atEdge.z);
+            OUT_OF_BOUND_CHECK(texel2, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupXY + 4)), atEdge.x | atEdge.z);
         // (x, y+1, z+1)
         float4 texel7 = OUT_OF_BOUND_CHECK(
-            texel3, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupXY + 4 * k3DMipGenThreadGroupX)), atEdge.z);
+            texel3, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupXY + 4 * k3DMipGenThreadGroupX)), atEdge.y | atEdge.z);
         // (x+1, y+1, z+1)
         float4 texel8 = OUT_OF_BOUND_CHECK(
-            texel5, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupXY + 4 * k3DMipGenThreadGroupX + 4)), atEdge.z);
+            texel5, TEXEL_LOAD(lIndex + (4 * k3DMipGenThreadGroupXY + 4 * k3DMipGenThreadGroupX + 4)),
+            atEdge.x | atEdge.y | atEdge.z);
 
         texel1 = (texel1 + texel2 + texel3 + texel4 + texel5 + texel6 + texel7 + texel8) / 8.0;
 
