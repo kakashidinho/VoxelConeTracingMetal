@@ -5,6 +5,16 @@
 #include <vector>
 #include <cmath>
 
+namespace
+{
+struct GenMipUniformData
+{
+	uint32_t srcLevel;
+	uint32_t numMipmapsToGenerate;
+	uint32_t padding[2];
+};
+}
+
 Texture3D::Texture3D(const uint32_t _width,
 					 const uint32_t _height,
 					 const uint32_t _depth) :
@@ -52,6 +62,7 @@ void Texture3D::initComputeShader()
 
 	clearPipelineState = graphics.getComputeCache().getComputeShader("voxel_clear", library, "clear");
 	copyBufferPipelineState = graphics.getComputeCache().getComputeShader("voxel_copyFromBuffer", library, "copyRgba8Buffer");
+	genMipPipelineState = graphics.getComputeCache().getComputeShader("voxel_genMip", library, "generate3DMipmaps");
 }
 
 void Texture3D::activate(id<MTLRenderCommandEncoder> encoder, uint32_t textureUnit)
@@ -112,8 +123,41 @@ void Texture3D::generateMips(id<MTLBlitCommandEncoder> encoder)
 
 void Texture3D::generateMips(id<MTLComputeCommandEncoder> encoder)
 {
-	// TODO: compute shader verstion
-	abort();
+	GenMipUniformData options;
+	// Compute shader verstion
+	[encoder setComputePipelineState:genMipPipelineState];
+	[encoder setTexture:textureObject atIndex:0];
+
+	uint32_t maxMipsPerBatch = 4;
+
+	uint32_t remainMips = (uint32_t)textureObject.mipmapLevelCount - 1;
+	options.srcLevel    = 0;
+
+	while (remainMips)
+	{
+		auto firstMipView = textureObjectViews[options.srcLevel + 1];
+
+		options.numMipmapsToGenerate = std::min(remainMips, maxMipsPerBatch);
+
+		[encoder setBytes:&options length:sizeof(options) atIndex:0];
+
+		for (uint32_t i = 1; i <= options.numMipmapsToGenerate; ++i)
+		{
+			[encoder setTexture:textureObjectViews[options.srcLevel + i] atIndex:i];
+		}
+
+		auto threads = MTLSizeMake(firstMipView.width, firstMipView.height, firstMipView.depth);
+		auto groupSize = MTLSizeMake(8, 8, 8);
+
+		auto groups = MTLSizeMake((threads.width + groupSize.width - 1) / groupSize.width,
+								  (threads.height + groupSize.height - 1) / groupSize.height,
+								  (threads.depth + groupSize.depth - 1) / groupSize.depth);
+
+		[encoder dispatchThreadgroups:groups threadsPerThreadgroup:groupSize];
+
+		remainMips -= options.numMipmapsToGenerate;
+		options.srcLevel += options.numMipmapsToGenerate;
+	}
 }
 
 void Texture3D::copyFirstLevelFromBuffer(id<MTLComputeCommandEncoder> encoder, id<MTLBuffer> buffer)

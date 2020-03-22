@@ -175,5 +175,9 @@ void Application::onKeyUp(char key)
 				Time::time = Time::currentTime();
 			}
 			break;
+		case 'M': case 'm':
+			graphics.useComputeShaderToGenMip = !graphics.useComputeShaderToGenMip;
+			std::cout << "Mipmap generation use computeshader: " << graphics.useComputeShaderToGenMip << std::endl;
+			break;
 	}
 }

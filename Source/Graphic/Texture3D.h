@@ -36,4 +36,5 @@ private:
 
 	id<MTLComputePipelineState> clearPipelineState;
 	id<MTLComputePipelineState> copyBufferPipelineState;
+	id<MTLComputePipelineState> genMipPipelineState;
 };

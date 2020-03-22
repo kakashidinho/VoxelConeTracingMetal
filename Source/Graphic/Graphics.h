@@ -77,6 +77,7 @@ public:
 	bool automaticallyVoxelize = true;
 	bool voxelizationQueued = true;
 	int voxelizationSparsity = 1; // Number of ticks between mipmap generation.
+	bool useComputeShaderToGenMip = true;
 	// (voxelization sparsity gives unstable framerates, so not sure if it's worth it in interactive applications.)
 	// This parameter is immutable after setup
 	bool isSinglePassVoxelization() const { return singlePassVoxelization; }

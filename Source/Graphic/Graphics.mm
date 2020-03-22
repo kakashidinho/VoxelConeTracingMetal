@@ -242,10 +242,20 @@ void Graphics::voxelize(id<MTLCommandBuffer> commandBuffer,
 
 	// Mipmap generation
 	if (automaticallyRegenerateMipmap || regenerateMipmapQueued) {
-		auto blitEncoder = [commandBuffer blitCommandEncoder];
-		voxelTexture->generateMips(blitEncoder);
+		if (useComputeShaderToGenMip)
+		{
+			auto computeEncoder = [commandBuffer computeCommandEncoder];
+			voxelTexture->generateMips(computeEncoder);
+			[computeEncoder endEncoding];
+		}
+		else
+		{
+			auto blitEncoder = [commandBuffer blitCommandEncoder];
+			voxelTexture->generateMips(blitEncoder);
+			[blitEncoder endEncoding];
+		}
+
 		regenerateMipmapQueued = false;
-		[blitEncoder endEncoding];
 	}
 }
 
