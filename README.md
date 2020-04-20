@@ -53,3 +53,4 @@ Demo Hotkeys
 * U to toggle Indirect Diffuse Lighting.
 * P to toggle Indirect Specular Lighting.
 * C to toggle Shadow.
+* M to toggle mipmap generation method: Compute Shader vs Built-in Blit Command.

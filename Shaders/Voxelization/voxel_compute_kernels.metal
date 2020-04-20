@@ -105,8 +105,7 @@ kernel void generate3DMipmaps(uint lIndex [[thread_index_in_threadgroup]],
 {
     uint firstMipLevel = options.srcLevel + 1;
     ushort3 mipSize =
-        ushort3(srcTexture.get_width(firstMipLevel), srcTexture.get_height(firstMipLevel),
-                srcTexture.get_depth(firstMipLevel));
+        ushort3(dstMip1.get_width(), dstMip1.get_height(), dstMip1.get_depth());
     bool validThread = gIndices.x < mipSize.x && gIndices.y < mipSize.y && gIndices.z < mipSize.z;
 
     constexpr sampler textureSampler(mag_filter::linear, min_filter::linear, mip_filter::linear);
